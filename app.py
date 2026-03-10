@@ -2,7 +2,7 @@ import streamlit as st
 import gspread
 from google.oauth2.service_account import Credentials
 from datetime import datetime
-import os # Import necessário para verificar a existência do arquivo de imagem
+import os
 
 # --- 1. CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(page_title="Pesquisa de Satisfação Setor Smart", page_icon="💡", layout="centered")
@@ -28,10 +28,9 @@ st.markdown("""
     /* Faixa Azul do Cabeçalho - REDUZIDA */
     .header-container {
         background-color: #0E3A5D;
-        padding: 0.8rem 1.5rem; /* Padding reduzido verticalmente */
+        padding: 1rem 1.5rem; 
         border-radius: 10px;
-        margin-bottom: 5px; /* Margem menor para aproximar a logo */
-        height: auto; /* Deixa a altura se ajustar ao texto */
+        margin-bottom: 15px;
         display: flex;
         align-items: center;
     }
@@ -39,20 +38,12 @@ st.markdown("""
     /* Texto dentro da faixa azul */
     .header-title {
         color: #FFFFFF !important;
-        font-size: 1.6rem; /* Fonte ligeiramente menor para caber na faixa reduzida */
+        font-size: 1.6rem;
         font-weight: bold;
         margin: 0;
     }
 
-    /* Container da Logo abaixo da faixa - ALINHADO À ESQUERDA */
-    .logo-container {
-        display: flex;
-        justify-content: flex-start; /* Alinha à esquerda */
-        margin-bottom: 20px; /* Espaço antes do formulário */
-        padding-left: 10px; /* Pequeno ajuste de alinhamento visual com a faixa */
-    }
-
-    /* Estilização geral dos labels (Nota, Empresa, Sliders) */
+    /* Estilização geral dos labels */
     .stSelectbox label, .stSlider label, .stTextInput label, .stTextArea label, .stRadio label {
         color: #0E3A5D !important;
         font-weight: bold;
@@ -68,33 +59,29 @@ st.markdown("""
         font-weight: bold;
         border: none;
     }
-    div.stButton > button:hover {
-        background-color: #2979b5 !important;
-        border: none;
+    
+    /* Remove padding excessivo do topo para aproximar os elementos */
+    .block-container {
+        padding-top: 2rem;
     }
-
-    /* Linha divisória */
-    hr { border: 0; border-top: 1px solid #dce1e6; }
 </style>
 """, unsafe_allow_html=True)
 
 # --- CABEÇALHO VISUAL ---
-# 1. Faixa Azul (reduzida via CSS)
+# 1. Faixa Azul
 st.markdown('<div class="header-container"><h1 class="header-title">Pesquisa de Satisfação Setor Smart</h1></div>', unsafe_allow_html=True)
 
-# 2. Logo abaixo da faixa, alinhada à esquerda (via CSS)
-NOME_ARQUIVO_LOGO = "Logo Escrita.png"
-if os.path.exists(NOME_ARQUIVO_LOGO):
-    # Usamos st.markdown com HTML para garantir o alinhamento CSS preciso
-    st.markdown(f"""
-    <div class="logo-container">
-        <img src="app/static/{NOME_ARQUIVO_LOGO}" width="180">
-    </div>
-    """, unsafe_allow_html=True)
-else:
-    # Fallback caso a imagem não seja encontrada na raiz
-    st.warning(f"Arquivo '{NOME_ARQUIVO_LOGO}' não encontrado. Verifique se ele está na raiz do repositório ao lado do app.py.")
+# 2. Logo abaixo da faixa, alinhada à esquerda
+# Usamos colunas para forçar o alinhamento à esquerda sem precisar de HTML complexo
+col_logo, col_vazia = st.columns([1, 2])
+with col_logo:
+    NOME_ARQUIVO_LOGO = "Logo Escrita.png"
+    if os.path.exists(NOME_ARQUIVO_LOGO):
+        st.image(NOME_ARQUIVO_LOGO, width=180)
+    else:
+        st.warning("Logo não encontrada.")
 
+st.write("") # Espaçador sutil
 
 # --- 3. CONTROLE DE FLUXO ---
 if 'passo' not in st.session_state:
@@ -156,17 +143,15 @@ elif st.session_state.passo == 3:
             st.write("---")
             return nota, melhoria
 
-        # Pergunta Unificada (Contábil/Fiscal)
-        n_cont_fisc, m_cont_fisc = campo_setor("Setor Contábil / Fiscal", "Lançamentos, conciliações, impostos e escrituração fiscal.", "cont_fisc")
-
+        n_cont_fisc, m_cont_fisc = campo_setor("Setor Contábil / Fiscal", "Lançamentos, conciliações e impostos.", "cont_fisc")
         n_fol, m_fol = campo_setor("Pessoal (Folha)", "Folha de pagamento e rotinas trabalhistas.", "fol")
         n_rec, m_rec = campo_setor("Recrutamento", "Processos seletivos e contratação.", "rec")
         n_legal, m_legal = campo_setor("Setor Legal / Societário", "Aberturas e alterações contratuais.", "legal")
         n_fin, m_fin = campo_setor("Setor Financeiro", "Gestão interna e faturamento da Escrita.", "fin")
-        n_bpo, m_bpo = campo_setor("Setor BPO Financeiro", "Gestão financeira terceirizada de clientes.", "bpo")
-        n_recep, m_recep = campo_setor("Recepção", "Atendimento inicial e documentos físicos.", "recep")
-        n_estru, m_estru = campo_setor("Estrutura Física", "Instalações e ambiente de reuniões.", "estru")
-        n_cs, m_cs = campo_setor("Sucesso do Cliente (CS)", "Garantia da melhor experiência para você.", "cs")
+        n_bpo, m_bpo = campo_setor("Setor BPO Financeiro", "Gestão financeira terceirizada.", "bpo")
+        n_recep, m_recep = campo_setor("Recepção", "Atendimento inicial e documentos.", "recep")
+        n_estru, m_estru = campo_setor("Estrutura Física", "Instalações e ambiente.", "estru")
+        n_cs, m_cs = campo_setor("Sucesso do Cliente (CS)", "Garantia da melhor experiência.", "cs")
 
         st.markdown("#### Podemos entrar em contato para falar sobre sua avaliação?")
         contato = st.radio("Selecione uma opção:", ["Sim", "Não"], horizontal=True, label_visibility="collapsed")
@@ -179,23 +164,22 @@ elif st.session_state.passo == 3:
                     wks = sh.worksheet("respostas")
                     r = st.session_state.respostas
 
-                    # Montagem exata de 29 colunas
                     dados = [
-                        datetime.now().strftime("%d/%m/%Y %H:%M:%S"), # A
-                        r['nome'], r['empresa'],                      # B, C
-                        r['nota_nps'], r['motivo_nps'],               # D, E
-                        r['clareza'], r['prazos'], r['comunicacao'],  # F, G, H
-                        r['cordialidade'], r['custo'],                # I, J
-                        n_cont_fisc, m_cont_fisc,                     # K, L
-                        n_fol, m_fol,                                 # M, N
-                        n_rec, m_rec,                                 # O, P
-                        n_legal, m_legal,                             # Q, R
-                        n_fin, m_fin,                                 # S, T
-                        n_bpo, m_bpo,                                 # U, V
-                        n_recep, m_recep,                             # W, X
-                        n_estru, m_estru,                             # Y, Z
-                        n_cs, m_cs,                                   # AA, AB
-                        contato                                       # AC
+                        datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
+                        r['nome'], r['empresa'],
+                        r['nota_nps'], r['motivo_nps'],
+                        r['clareza'], r['prazos'], r['comunicacao'],
+                        r['cordialidade'], r['custo'],
+                        n_cont_fisc, m_cont_fisc,
+                        n_fol, m_fol,
+                        n_rec, m_rec,
+                        n_legal, m_legal,
+                        n_fin, m_fin,
+                        n_bpo, m_bpo,
+                        n_recep, m_recep,
+                        n_estru, m_estru,
+                        n_cs, m_cs,
+                        contato
                     ]
 
                     wks.append_row(dados)
