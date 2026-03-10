@@ -60,8 +60,10 @@ if st.session_state.passo == 1:
 elif st.session_state.passo == 2:
     with st.form("etapa2"):
         st.subheader("Avaliação por Setor")
-        n_tec = st.selectbox("Técnico", ["Não uso"] + list(range(11)), index=11)
-        n_fol = st.selectbox("Folha", ["Não uso"] + list(range(11)), index=11)
+        # Pergunta Unificada conforme solicitado:
+        n_tec = st.selectbox("Técnico (Contábil e Fiscal)", ["Não uso"] + list(range(11)), index=11)
+        n_fol = st.selectbox("Pessoal (Folha)", ["Não uso"] + list(range(11)), index=11)
+        n_rec = st.selectbox("Recrutamento e Seleção", ["Não uso"] + list(range(11)), index=11)
         contato = st.radio("Podemos ligar?", ["Sim", "Não"], horizontal=True)
         
         if st.form_submit_button("Finalizar"):
@@ -71,10 +73,11 @@ elif st.session_state.passo == 2:
                     sh = client.open_by_key(st.secrets["SHEET_ID"])
                     wks = sh.worksheet("respostas")
                     r = st.session_state.respostas
+                    # Adicionado n_rec na lista de salvamento
                     wks.append_row([
                         datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
                         r['nome'], r['empresa'], r['nota'], r['motivo'],
-                        n_tec, n_fol, contato
+                        n_tec, n_fol, n_rec, contato
                     ])
                     st.session_state.passo = 3
                     st.rerun()
