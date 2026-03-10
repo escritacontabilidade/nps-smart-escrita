@@ -19,9 +19,14 @@ def conectar_planilha():
         st.error(f"Erro na conexão: {e}")
         return None
 
-# --- 2. ESTILO VISUAL (CSS Customizado) ---
+# --- 2. ESTILO VISUAL E AJUSTE PARA EMBED ---
 st.markdown("""
 <style>
+    /* Esconde Menu, Header e Rodapé do Streamlit para o cliente não ver outros apps */
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    header {visibility: hidden;}
+    
     /* Fundo da página */
     .stApp { background-color: #F4F6F8; }
 
@@ -60,19 +65,16 @@ st.markdown("""
         border: none;
     }
     
-    /* Remove padding excessivo do topo para aproximar os elementos */
+    /* Remove padding excessivo do topo */
     .block-container {
-        padding-top: 2rem;
+        padding-top: 1rem;
     }
 </style>
 """, unsafe_allow_html=True)
 
 # --- CABEÇALHO VISUAL ---
-# 1. Faixa Azul
 st.markdown('<div class="header-container"><h1 class="header-title">Pesquisa de Satisfação Setor Smart</h1></div>', unsafe_allow_html=True)
 
-# 2. Logo abaixo da faixa, alinhada à esquerda
-# Usamos colunas para forçar o alinhamento à esquerda sem precisar de HTML complexo
 col_logo, col_vazia = st.columns([1, 2])
 with col_logo:
     NOME_ARQUIVO_LOGO = "Logo Escrita.png"
@@ -81,7 +83,7 @@ with col_logo:
     else:
         st.warning("Logo não encontrada.")
 
-st.write("") # Espaçador sutil
+st.write("") 
 
 # --- 3. CONTROLE DE FLUXO ---
 if 'passo' not in st.session_state:
