@@ -30,6 +30,8 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
+# EXIBIÇÃO DA LOGO E TÍTULO
+st.image("Logo Escrita.png", width=200)
 st.markdown('<div class="header-container"><h1 class="header-title">Pesquisa de Satisfação Setor Smart</h1></div>', unsafe_allow_html=True)
 
 # --- 3. CONTROLE DE FLUXO ---
@@ -92,7 +94,7 @@ elif st.session_state.passo == 3:
             st.write("---")
             return nota, melhoria
 
-        # Pergunta Unificada
+        # Pergunta Unificada (Contábil/Fiscal)
         n_cont_fisc, m_cont_fisc = campo_setor("Setor Contábil / Fiscal", "Lançamentos, conciliações, impostos e escrituração fiscal.", "cont_fisc")
         
         n_fol, m_fol = campo_setor("Pessoal (Folha)", "Folha de pagamento e rotinas trabalhistas.", "fol")
@@ -115,13 +117,14 @@ elif st.session_state.passo == 3:
                     wks = sh.worksheet("respostas")
                     r = st.session_state.respostas
                     
+                    # Montagem exata de 29 colunas
                     dados = [
                         datetime.now().strftime("%d/%m/%Y %H:%M:%S"), # A
                         r['nome'], r['empresa'],                      # B, C
                         r['nota_nps'], r['motivo_nps'],               # D, E
                         r['clareza'], r['prazos'], r['comunicacao'],  # F, G, H
                         r['cordialidade'], r['custo'],                # I, J
-                        n_cont_fisc, m_cont_fisc,                     # K, L (UNIFICADO)
+                        n_cont_fisc, m_cont_fisc,                     # K, L
                         n_fol, m_fol,                                 # M, N
                         n_rec, m_rec,                                 # O, P
                         n_legal, m_legal,                             # Q, R
