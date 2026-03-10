@@ -75,7 +75,7 @@ st.markdown("""
 # --- CABEÇALHO VISUAL ---
 st.markdown('<div class="header-container"><h1 class="header-title">Pesquisa de Satisfação Setor Smart</h1></div>', unsafe_allow_html=True)
 
-# Logo alinhada à esquerda usando colunas (mais estável que HTML puro para evitar 'estouro')
+# Logo alinhada à esquerda usando colunas
 col_logo, col_vazia = st.columns([1, 2])
 with col_logo:
     NOME_ARQUIVO_LOGO = "Logo Escrita.png"
@@ -167,7 +167,7 @@ elif st.session_state.passo == 3:
                     wks = sh.worksheet("respostas")
                     r = st.session_state.respostas
 
-                    # Mantendo todos os seus 29 campos originais da planilha
+                    # Dados para a planilha
                     dados = [
                         datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
                         r['nome'], r['empresa'],
@@ -197,6 +197,7 @@ elif st.session_state.passo == 4:
     st.balloons()
     st.success("Sua pesquisa foi enviada com sucesso! A Escrita Contabilidade agradece sua participação.")
     if st.button("Enviar nova resposta"):
-        st.session_state.passo = 1
-        st.session_state.respostas = {}
+        # Reset total do estado para evitar loop de estado preso no Passo 4
+        for key in list(st.session_state.keys()):
+            del st.session_state[key]
         st.rerun()
