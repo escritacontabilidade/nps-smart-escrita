@@ -3,10 +3,8 @@ import gspread
 from google.oauth2.service_account import Credentials
 from datetime import datetime
 
-# --- 1. CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(page_title="NPS Smart - Escrita", page_icon="💡")
 
-# --- 2. CONFIGURAÇÕES VISUAIS (CSS) ---
 st.markdown("""
 <style>
     .stApp { background-color: #F4F6F8; }
@@ -29,41 +27,23 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# --- 3. CONEXÃO COM GOOGLE SHEETS (SANEAMENTO ANALÍTICO) ---
 def conectar_planilha():
-    scope = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
-    
-    # Busca o dicionário de segredos
+    scope = [
+        "https://www.googleapis.com/auth/spreadsheets",
+        "https://www.googleapis.com/auth/drive"
+    ]
     creds_dict = dict(st.secrets["gcp_service_account"])
-    
-    # TRATAMENTO ANTI-ERRO PEM DEFINITIVO:
-    pk = creds_dict["private_key"]
-    
-    # Se houver qualquer "sujeira" (como o underline do erro 3, 95) antes do início da chave, 
-    # este comando joga o lixo fora e começa do lugar certo.
-    if "-----BEGIN PRIVATE KEY-----" in pk:
-        pk = pk[pk.find("-----BEGIN PRIVATE KEY-----"):]
-    
-    # Garante que as quebras de linha sejam reais
-    pk = pk.replace("\\n", "\n")
-    
-    # Remove espaços vazios nas pontas
-    creds_dict["private_key"] = pk.strip()
-
     credentials = Credentials.from_service_account_info(creds_dict, scopes=scope)
     return gspread.authorize(credentials)
 
-# --- 4. CABEÇALHO ---
 with st.container():
     st.markdown('<div class="header-container">', unsafe_allow_html=True)
     st.markdown('<h1 class="header-title">Pesquisa de Satisfação - Área Smart</h1></div>', unsafe_allow_html=True)
 
-# --- 5. LÓGICA DO FORMULÁRIO ---
 if 'passo' not in st.session_state:
     st.session_state.passo = 1
     st.session_state.respostas = {}
 
-# PASSO 1: IDENTIFICAÇÃO E NPS
 if st.session_state.passo == 1:
     with st.form("etapa1"):
         nome = st.text_input("Seu Nome:")
@@ -80,19 +60,18 @@ if st.session_state.passo == 1:
                 st.error("Por favor, nos conte o que podemos melhorar.")
             else:
                 st.session_state.respostas.update({
-                    'nome': nome, 
-                    'empresa': empresa, 
-                    'nota_smart': nota_smart, 
+                    'nome': nome,
+                    'empresa': empresa,
+                    'nota_smart': nota_smart,
                     'motivo': motivo
                 })
                 st.session_state.passo = 2
                 st.rerun()
 
-# PASSO 2: AVALIAÇÃO POR SETOR
 elif st.session_state.passo == 2:
     with st.form("etapa2"):
         st.subheader("Avaliação por Setor")
-        
+
         def criar_campo(label, desc):
             st.write(f"**{label}**")
             st.caption(desc)
@@ -106,7 +85,7 @@ elif st.session_state.passo == 2:
         n_tec, t_tec = criar_campo("Setor Técnico (Contábil e Fiscal)", "Entrega de impostos e obrigações.")
         n_fol, t_fol = criar_campo("Pessoal (Folha)", "Folha de pagamento e rotinas.")
         n_rec, t_rec = criar_campo("Recrutamento", "Processos seletivos.")
-        
+
         contato = st.radio("Podemos te ligar sobre sua nota?", ["Sim", "Não"], horizontal=True)
 
         if st.form_submit_button("Finalizar"):
@@ -114,23 +93,31 @@ elif st.session_state.passo == 2:
                 client = conectar_planilha()
                 sh = client.open_by_key(st.secrets["SHEET_ID"])
                 wks = sh.worksheet("respostas")
-                
+
                 r = st.session_state.respostas
                 linha = [
                     datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
-                    r['nome'], r['empresa'], r['nota_smart'], r['motivo'],
-                    n_tec, t_tec, n_fol, t_fol, n_rec, t_rec, contato
+                    r["nome"],
+                    r["empresa"],
+                    r["nota_smart"],
+                    r["motivo"],
+                    n_tec, t_tec,
+                    n_fol, t_fol,
+                    n_rec, t_rec,
+                    contato
                 ]
+
                 wks.append_row(linha)
                 st.session_state.passo = 3
                 st.rerun()
-            except Exception as e:
-                st.error(f"Erro ao salvar: {e}")
 
-# PASSO 3: SUCESSO
+            except Exception as e:
+                st.error(f"Erro ao salvar: {type(e).__name__}: {e}")
+
 elif st.session_state.passo == 3:
     st.balloons()
     st.success("Obrigado! Sua opinião faz a área Smart crescer.")
     if st.button("Enviar nova resposta"):
         st.session_state.passo = 1
+        st.session_state.respostas = {}
         st.rerun()
