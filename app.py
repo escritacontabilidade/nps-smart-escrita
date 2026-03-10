@@ -7,9 +7,9 @@ import os
 # --- 1. CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(page_title="Pesquisa de Satisfação Setor Smart", page_icon="💡", layout="centered")
 
-# ESTABILIZADOR PARA EMBED (Evita o looping de refresh ao detectar o iframe)
-if "embed" in st.query_params:
-    st.query_params["embed"] = "true"
+# --- TRAVA ANTI-LOOPING (ADICIONADO PARA MODO EMBED) ---
+if "fragment" not in st.session_state:
+    st.session_state.fragment = True
 
 def conectar_planilha():
     scope = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
@@ -26,10 +26,15 @@ def conectar_planilha():
 # --- 2. ESTILO VISUAL E AJUSTE PARA EMBED ---
 st.markdown("""
 <style>
+    /* Esconde Menu, Header e Rodapé para não aparecer em modo Embed */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     header {visibility: hidden;}
+    
+    /* Fundo da página */
     .stApp { background-color: #F4F6F8; }
+
+    /* Faixa Azul do Cabeçalho */
     .header-container {
         background-color: #0E3A5D;
         padding: 1rem 1.5rem; 
@@ -38,16 +43,22 @@ st.markdown("""
         display: flex;
         align-items: center;
     }
+
+    /* Texto dentro da faixa azul */
     .header-title {
         color: #FFFFFF !important;
         font-size: 1.6rem;
         font-weight: bold;
         margin: 0;
     }
+
+    /* Estilização geral dos labels */
     .stSelectbox label, .stSlider label, .stTextInput label, .stTextArea label, .stRadio label {
         color: #0E3A5D !important;
         font-weight: bold;
     }
+
+    /* Botões customizados */
     div.stButton > button {
         background-color: #1F5E8C !important;
         color: white !important;
@@ -57,6 +68,8 @@ st.markdown("""
         font-weight: bold;
         border: none;
     }
+    
+    /* Ajuste de respiro do topo */
     .block-container {
         padding-top: 1rem;
     }
@@ -66,6 +79,7 @@ st.markdown("""
 # --- CABEÇALHO VISUAL ---
 st.markdown('<div class="header-container"><h1 class="header-title">Pesquisa de Satisfação Setor Smart</h1></div>', unsafe_allow_html=True)
 
+# Logo alinhada à esquerda usando colunas
 col_logo, col_vazia = st.columns([1, 2])
 with col_logo:
     NOME_ARQUIVO_LOGO = "Logo Escrita.png"
@@ -109,6 +123,7 @@ elif st.session_state.passo == 2:
         clareza = c1.select_slider("Clareza nas informações:", options=list(range(1, 11)), value=10)
         comunicacao = c1.select_slider("Qualidade da Comunicação:", options=list(range(1, 11)), value=10)
         custo = c1.select_slider("Custo-benefício:", options=list(range(1, 11)), value=10)
+
         prazos = c2.select_slider("Cumprimento de Prazos:", options=list(range(1, 11)), value=10)
         cordialidade = c2.select_slider("Cordialidade no Atendimento:", options=list(range(1, 11)), value=10)
 
@@ -156,6 +171,7 @@ elif st.session_state.passo == 3:
                     wks = sh.worksheet("respostas")
                     r = st.session_state.respostas
 
+                    # Dados para a planilha
                     dados = [
                         datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
                         r['nome'], r['empresa'],
@@ -185,6 +201,7 @@ elif st.session_state.passo == 4:
     st.balloons()
     st.success("Sua pesquisa foi enviada com sucesso! A Escrita Contabilidade agradece sua participação.")
     if st.button("Enviar nova resposta"):
+        # Reset total do estado para evitar loop de estado preso no Passo 4
         for key in list(st.session_state.keys()):
             del st.session_state[key]
         st.rerun()
