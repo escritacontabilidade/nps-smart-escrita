@@ -139,7 +139,6 @@ elif st.session_state.passo == 3:
 
         n_cont_fisc, m_cont_fisc = campo_setor("Setor Contábil / Fiscal", "Lançamentos, conciliações e impostos.", "cont_fisc")
         n_fol, m_fol = campo_setor("Pessoal (Folha)", "Folha de pagamento e rotinas trabalhistas.", "fol")
-        n_rec, m_rec = campo_setor("Recrutamento", "Processos seletivos e contratação.", "rec")
         n_legal, m_legal = campo_setor("Setor Legal / Societário", "Aberturas e alterações contratuais.", "legal")
         n_fin, m_fin = campo_setor("Setor Financeiro", "Gestão interna e faturamento da Escrita.", "fin")
         n_bpo, m_bpo = campo_setor("Setor BPO Financeiro", "Gestão financeira terceirizada.", "bpo")
