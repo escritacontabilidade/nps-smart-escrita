@@ -22,7 +22,7 @@ def conectar_planilha():
 # --- 2. ESTILO VISUAL E AJUSTE PARA EMBED ---
 st.markdown("""
 <style>
-    /* Esconde Menu, Header e Rodapé do Streamlit para o cliente não ver outros apps */
+    /* Esconde Menu, Header e Rodapé para não aparecer em modo Embed */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     header {visibility: hidden;}
@@ -30,7 +30,7 @@ st.markdown("""
     /* Fundo da página */
     .stApp { background-color: #F4F6F8; }
 
-    /* Faixa Azul do Cabeçalho - REDUZIDA */
+    /* Faixa Azul do Cabeçalho */
     .header-container {
         background-color: #0E3A5D;
         padding: 1rem 1.5rem; 
@@ -65,7 +65,7 @@ st.markdown("""
         border: none;
     }
     
-    /* Remove padding excessivo do topo */
+    /* Ajuste de respiro do topo */
     .block-container {
         padding-top: 1rem;
     }
@@ -75,6 +75,7 @@ st.markdown("""
 # --- CABEÇALHO VISUAL ---
 st.markdown('<div class="header-container"><h1 class="header-title">Pesquisa de Satisfação Setor Smart</h1></div>', unsafe_allow_html=True)
 
+# Logo alinhada à esquerda usando colunas (mais estável que HTML puro para evitar 'estouro')
 col_logo, col_vazia = st.columns([1, 2])
 with col_logo:
     NOME_ARQUIVO_LOGO = "Logo Escrita.png"
@@ -166,6 +167,7 @@ elif st.session_state.passo == 3:
                     wks = sh.worksheet("respostas")
                     r = st.session_state.respostas
 
+                    # Mantendo todos os seus 29 campos originais da planilha
                     dados = [
                         datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
                         r['nome'], r['empresa'],
@@ -196,4 +198,5 @@ elif st.session_state.passo == 4:
     st.success("Sua pesquisa foi enviada com sucesso! A Escrita Contabilidade agradece sua participação.")
     if st.button("Enviar nova resposta"):
         st.session_state.passo = 1
+        st.session_state.respostas = {}
         st.rerun()
