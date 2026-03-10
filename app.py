@@ -4,7 +4,7 @@ from google.oauth2.service_account import Credentials
 from datetime import datetime
 
 # --- 1. CONFIGURAÇÃO DA PÁGINA ---
-st.set_page_config(page_title="NPS Smart - Escrita", page_icon="💡", layout="centered")
+st.set_page_config(page_title="Pesquisa de Satisfação Setor Smart", page_icon="💡", layout="centered")
 
 def conectar_planilha():
     scope = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
@@ -32,7 +32,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-st.markdown('<div class="header-container"><h1 class="header-title">Pesquisa de Satisfação - Área Smart</h1></div>', unsafe_allow_html=True)
+st.markdown('<div class="header-container"><h1 class="header-title">Pesquisa de Satisfação Setor Smart</h1></div>', unsafe_allow_html=True)
 
 # --- 3. CONTROLE DE FLUXO ---
 if 'passo' not in st.session_state:
@@ -42,13 +42,14 @@ if 'passo' not in st.session_state:
 # --- PASSO 1: IDENTIFICAÇÃO E NPS GERAL ---
 if st.session_state.passo == 1:
     with st.form("etapa1"):
-        nome = st.text_input("Seu Nome:")
-        empresa = st.text_input("Sua Empresa:")
+        nome = st.text_input("Seu Nome:", placeholder="Ex: João Silva")
+        empresa = st.text_input("Nome da sua empresa:", placeholder="Ex: Empresa ABC")
         st.write("---")
-        nota_nps = st.select_slider("De 0 a 10, o quanto recomendaria a Área Smart?", options=list(range(11)), value=10)
-        motivo_nps = st.text_area("O que motivou sua nota?")
+        st.markdown("### De 0 a 10, o quanto você recomendaria a Escrita Contabilidade para um amigo?")
+        nota_nps = st.select_slider("Nota:", options=list(range(11)), value=10)
+        motivo_nps = st.text_area("O que mais motivou a sua nota?", placeholder="Conte-nos brevemente o motivo da sua avaliação...")
         
-        if st.form_submit_button("Próximo: Avaliação Geral"):
+        if st.form_submit_button("Próxima Etapa"):
             if nome and empresa:
                 st.session_state.respostas.update({
                     'nome': nome, 'empresa': empresa, 'nota_nps': nota_nps, 'motivo_nps': motivo_nps
@@ -70,7 +71,7 @@ elif st.session_state.passo == 2:
         prazos = c2.select_slider("Cumprimento de Prazos:", options=list(range(1, 11)), value=10)
         cordialidade = c2.select_slider("Cordialidade no Atendimento:", options=list(range(1, 11)), value=10)
         
-        if st.form_submit_button("Próximo: Avaliar Departamentos"):
+        if st.form_submit_button("Avaliar Departamentos"):
             st.session_state.respostas.update({
                 'clareza': clareza, 'prazos': prazos, 'comunicacao': comunicacao, 
                 'cordialidade': cordialidade, 'custo': custo
@@ -78,34 +79,35 @@ elif st.session_state.passo == 2:
             st.session_state.passo = 3
             st.rerun()
 
-# --- PASSO 3: DEPARTAMENTOS (O MAIS IMPORTANTE) ---
+# --- PASSO 3: DEPARTAMENTOS ---
 elif st.session_state.passo == 3:
-    st.subheader("Avaliação por Departamento")
+    st.subheader("Avaliação por Setor")
     st.info("Para cada setor, dê uma nota e, se desejar, sugira uma melhoria.")
     
     with st.form("etapa3"):
-        def campo_setor(titulo, chave):
-            st.markdown(f"**{titulo}**")
+        def campo_setor(titulo, subtitulo, chave):
+            st.markdown(f"#### {titulo}")
+            st.caption(subtitulo)
             col_n, col_m = st.columns([1, 3])
             nota = col_n.selectbox(f"Nota", ["Não uso"] + list(range(11)), index=11, key=f"n_{chave}")
-            melhoria = col_m.text_input("O que podemos melhorar?", key=f"m_{chave}", placeholder="Opcional")
+            melhoria = col_m.text_input("O que podemos melhorar? (opcional)", key=f"m_{chave}")
             st.write("---")
             return nota, melhoria
 
-        n_cont, m_cont = campo_setor("Contábil / Fiscal", "cont")
-        n_fol, m_fol = campo_setor("Pessoal (Folha)", "fol")
-        n_rec, m_rec = campo_setor("Recrutamento", "rec")
-        n_smart, m_smart = campo_setor("Setor Smart", "smart")
-        n_legal, m_legal = campo_setor("Setor Legal / Societário", "legal")
-        n_fin, m_fin = campo_setor("Setor Financeiro", "fin")
-        n_bpo, m_bpo = campo_setor("Setor BPO Financeiro", "bpo")
-        n_recep, m_recep = campo_setor("Recepção", "recep")
-        n_estru, m_estru = campo_setor("Estrutura Física", "estru")
-        n_cs, m_cs = campo_setor("Sucesso do Cliente (CS)", "cs")
+        n_cont, m_cont = campo_setor("Setor Contábil / Fiscal", "Lançamentos, conciliações, impostos e escrituração fiscal.", "cont")
+        n_fol, m_fol = campo_setor("Pessoal (Folha)", "Folha de pagamento e rotinas trabalhistas.", "fol")
+        n_rec, m_rec = campo_setor("Recrutamento", "Processos seletivos e contratação.", "rec")
+        n_legal, m_legal = campo_setor("Setor Legal / Societário", "Aberturas e alterações contratuais.", "legal")
+        n_fin, m_fin = campo_setor("Setor Financeiro", "Gestão interna e faturamento da Escrita.", "fin")
+        n_bpo, m_bpo = campo_setor("Setor BPO Financeiro", "Gestão financeira terceirizada de clientes.", "bpo")
+        n_recep, m_recep = campo_setor("Recepção", "Atendimento inicial e documentos físicos.", "recep")
+        n_estru, m_estru = campo_setor("Estrutura Física", "Instalações e ambiente de reuniões.", "estru")
+        n_cs, m_cs = campo_setor("Sucesso do Cliente (CS)", "Garantia da melhor experiência para você.", "cs")
 
-        contato = st.radio("Podemos entrar em contato para falar sobre sua avaliação?", ["Sim", "Não"], horizontal=True)
+        st.markdown("#### Podemos entrar em contato para falar sobre sua avaliação?")
+        contato = st.radio("Selecione uma opção:", ["Sim", "Não"], horizontal=True, label_visibility="collapsed")
 
-        if st.form_submit_button("Finalizar e Enviar Pesquisa"):
+        if st.form_submit_button("Finalizar e Enviar"):
             client = conectar_planilha()
             if client:
                 try:
@@ -113,24 +115,23 @@ elif st.session_state.passo == 3:
                     wks = sh.worksheet("respostas")
                     r = st.session_state.respostas
                     
-                    # MONTAGEM EXATA DAS 31 COLUNAS
+                    # MONTAGEM DE 29 COLUNAS
                     dados = [
                         datetime.now().strftime("%d/%m/%Y %H:%M:%S"), # 1
                         r['nome'], r['empresa'],                      # 2, 3
                         r['nota_nps'], r['motivo_nps'],               # 4, 5
                         r['clareza'], r['prazos'], r['comunicacao'],  # 6, 7, 8
                         r['cordialidade'], r['custo'],                # 9, 10
-                        n_cont, m_cont,                               # 11, 12
+                        n_cont, m_cont,                               # 11, 12 (Contábil/Fiscal Único)
                         n_fol, m_fol,                                 # 13, 14
                         n_rec, m_rec,                                 # 15, 16
-                        n_smart, m_smart,                             # 17, 18
-                        n_legal, m_legal,                             # 19, 20
-                        n_fin, m_fin,                                 # 21, 22
-                        n_bpo, m_bpo,                                 # 23, 24
-                        n_recep, m_recep,                             # 25, 26
-                        n_estru, m_estru,                             # 27, 28
-                        n_cs, m_cs,                                   # 29, 30
-                        contato                                       # 31
+                        n_legal, m_legal,                             # 17, 18
+                        n_fin, m_fin,                                 # 19, 20
+                        n_bpo, m_bpo,                                 # 21, 22
+                        n_recep, m_recep,                             # 23, 24
+                        n_estru, m_estru,                             # 25, 26
+                        n_cs, m_cs,                                   # 27, 28
+                        contato                                       # 29
                     ]
                     
                     wks.append_row(dados)
