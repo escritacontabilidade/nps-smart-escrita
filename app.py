@@ -10,10 +10,8 @@ def conectar_planilha():
     scope = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
     try:
         creds_dict = dict(st.secrets["gcp_service_account"])
-        # Limpeza da chave para evitar erro de PEM
         pk = creds_dict["private_key"].replace("\\n", "\n").strip().strip('"').strip("'")
         creds_dict["private_key"] = pk
-        
         credentials = Credentials.from_service_account_info(creds_dict, scopes=scope)
         return gspread.authorize(credentials)
     except Exception as e:
@@ -94,7 +92,9 @@ elif st.session_state.passo == 3:
             st.write("---")
             return nota, melhoria
 
-        n_cont, m_cont = campo_setor("Setor Contábil / Fiscal", "Lançamentos, conciliações, impostos e escrituração fiscal.", "cont")
+        # Pergunta Unificada
+        n_cont_fisc, m_cont_fisc = campo_setor("Setor Contábil / Fiscal", "Lançamentos, conciliações, impostos e escrituração fiscal.", "cont_fisc")
+        
         n_fol, m_fol = campo_setor("Pessoal (Folha)", "Folha de pagamento e rotinas trabalhistas.", "fol")
         n_rec, m_rec = campo_setor("Recrutamento", "Processos seletivos e contratação.", "rec")
         n_legal, m_legal = campo_setor("Setor Legal / Societário", "Aberturas e alterações contratuais.", "legal")
@@ -115,23 +115,22 @@ elif st.session_state.passo == 3:
                     wks = sh.worksheet("respostas")
                     r = st.session_state.respostas
                     
-                    # MONTAGEM DE 29 COLUNAS
                     dados = [
-                        datetime.now().strftime("%d/%m/%Y %H:%M:%S"), # 1
-                        r['nome'], r['empresa'],                      # 2, 3
-                        r['nota_nps'], r['motivo_nps'],               # 4, 5
-                        r['clareza'], r['prazos'], r['comunicacao'],  # 6, 7, 8
-                        r['cordialidade'], r['custo'],                # 9, 10
-                        n_cont, m_cont,                               # 11, 12 (Contábil/Fiscal Único)
-                        n_fol, m_fol,                                 # 13, 14
-                        n_rec, m_rec,                                 # 15, 16
-                        n_legal, m_legal,                             # 17, 18
-                        n_fin, m_fin,                                 # 19, 20
-                        n_bpo, m_bpo,                                 # 21, 22
-                        n_recep, m_recep,                             # 23, 24
-                        n_estru, m_estru,                             # 25, 26
-                        n_cs, m_cs,                                   # 27, 28
-                        contato                                       # 29
+                        datetime.now().strftime("%d/%m/%Y %H:%M:%S"), # A
+                        r['nome'], r['empresa'],                      # B, C
+                        r['nota_nps'], r['motivo_nps'],               # D, E
+                        r['clareza'], r['prazos'], r['comunicacao'],  # F, G, H
+                        r['cordialidade'], r['custo'],                # I, J
+                        n_cont_fisc, m_cont_fisc,                     # K, L (UNIFICADO)
+                        n_fol, m_fol,                                 # M, N
+                        n_rec, m_rec,                                 # O, P
+                        n_legal, m_legal,                             # Q, R
+                        n_fin, m_fin,                                 # S, T
+                        n_bpo, m_bpo,                                 # U, V
+                        n_recep, m_recep,                             # W, X
+                        n_estru, m_estru,                             # Y, Z
+                        n_cs, m_cs,                                   # AA, AB
+                        contato                                       # AC
                     ]
                     
                     wks.append_row(dados)
