@@ -2,6 +2,7 @@ import streamlit as st
 import gspread
 from google.oauth2.service_account import Credentials
 from datetime import datetime
+import os # Import necessário para verificar a existência do arquivo de imagem
 
 # --- 1. CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(page_title="Pesquisa de Satisfação Setor Smart", page_icon="💡", layout="centered")
@@ -18,21 +19,82 @@ def conectar_planilha():
         st.error(f"Erro na conexão: {e}")
         return None
 
-# --- 2. ESTILO VISUAL ---
+# --- 2. ESTILO VISUAL (CSS Customizado) ---
 st.markdown("""
 <style>
+    /* Fundo da página */
     .stApp { background-color: #F4F6F8; }
-    .header-container { background-color: #0E3A5D; padding: 1.5rem; border-radius: 10px; margin-bottom: 20px; }
-    .header-title { color: #FFFFFF !important; font-size: 1.8rem; font-weight: bold; }
-    .stSelectbox label, .stSlider label, .stTextInput label, .stTextArea label { color: #0E3A5D !important; font-weight: bold; }
-    div.stButton > button { background-color: #1F5E8C !important; color: white !important; width: 100%; border-radius: 8px; height: 3em; font-weight: bold; }
+
+    /* Faixa Azul do Cabeçalho - REDUZIDA */
+    .header-container {
+        background-color: #0E3A5D;
+        padding: 0.8rem 1.5rem; /* Padding reduzido verticalmente */
+        border-radius: 10px;
+        margin-bottom: 5px; /* Margem menor para aproximar a logo */
+        height: auto; /* Deixa a altura se ajustar ao texto */
+        display: flex;
+        align-items: center;
+    }
+
+    /* Texto dentro da faixa azul */
+    .header-title {
+        color: #FFFFFF !important;
+        font-size: 1.6rem; /* Fonte ligeiramente menor para caber na faixa reduzida */
+        font-weight: bold;
+        margin: 0;
+    }
+
+    /* Container da Logo abaixo da faixa - ALINHADO À ESQUERDA */
+    .logo-container {
+        display: flex;
+        justify-content: flex-start; /* Alinha à esquerda */
+        margin-bottom: 20px; /* Espaço antes do formulário */
+        padding-left: 10px; /* Pequeno ajuste de alinhamento visual com a faixa */
+    }
+
+    /* Estilização geral dos labels (Nota, Empresa, Sliders) */
+    .stSelectbox label, .stSlider label, .stTextInput label, .stTextArea label, .stRadio label {
+        color: #0E3A5D !important;
+        font-weight: bold;
+    }
+
+    /* Botões customizados */
+    div.stButton > button {
+        background-color: #1F5E8C !important;
+        color: white !important;
+        width: 100%;
+        border-radius: 8px;
+        height: 3em;
+        font-weight: bold;
+        border: none;
+    }
+    div.stButton > button:hover {
+        background-color: #2979b5 !important;
+        border: none;
+    }
+
+    /* Linha divisória */
     hr { border: 0; border-top: 1px solid #dce1e6; }
 </style>
 """, unsafe_allow_html=True)
 
-# EXIBIÇÃO DA LOGO E TÍTULO
-st.image("Logo Escrita.png", width=200)
+# --- CABEÇALHO VISUAL ---
+# 1. Faixa Azul (reduzida via CSS)
 st.markdown('<div class="header-container"><h1 class="header-title">Pesquisa de Satisfação Setor Smart</h1></div>', unsafe_allow_html=True)
+
+# 2. Logo abaixo da faixa, alinhada à esquerda (via CSS)
+NOME_ARQUIVO_LOGO = "Logo Escrita.png"
+if os.path.exists(NOME_ARQUIVO_LOGO):
+    # Usamos st.markdown com HTML para garantir o alinhamento CSS preciso
+    st.markdown(f"""
+    <div class="logo-container">
+        <img src="app/static/{NOME_ARQUIVO_LOGO}" width="180">
+    </div>
+    """, unsafe_allow_html=True)
+else:
+    # Fallback caso a imagem não seja encontrada na raiz
+    st.warning(f"Arquivo '{NOME_ARQUIVO_LOGO}' não encontrado. Verifique se ele está na raiz do repositório ao lado do app.py.")
+
 
 # --- 3. CONTROLE DE FLUXO ---
 if 'passo' not in st.session_state:
@@ -48,7 +110,7 @@ if st.session_state.passo == 1:
         st.markdown("### De 0 a 10, o quanto você recomendaria a Escrita Contabilidade para um amigo?")
         nota_nps = st.select_slider("Nota:", options=list(range(11)), value=10)
         motivo_nps = st.text_area("O que mais motivou a sua nota?", placeholder="Conte-nos brevemente o motivo da sua avaliação...")
-        
+
         if st.form_submit_button("Próxima Etapa"):
             if nome and empresa:
                 st.session_state.respostas.update({
@@ -67,13 +129,13 @@ elif st.session_state.passo == 2:
         clareza = c1.select_slider("Clareza nas informações:", options=list(range(1, 11)), value=10)
         comunicacao = c1.select_slider("Qualidade da Comunicação:", options=list(range(1, 11)), value=10)
         custo = c1.select_slider("Custo-benefício:", options=list(range(1, 11)), value=10)
-        
+
         prazos = c2.select_slider("Cumprimento de Prazos:", options=list(range(1, 11)), value=10)
         cordialidade = c2.select_slider("Cordialidade no Atendimento:", options=list(range(1, 11)), value=10)
-        
+
         if st.form_submit_button("Avaliar Departamentos"):
             st.session_state.respostas.update({
-                'clareza': clareza, 'prazos': prazos, 'comunicacao': comunicacao, 
+                'clareza': clareza, 'prazos': prazos, 'comunicacao': comunicacao,
                 'cordialidade': cordialidade, 'custo': custo
             })
             st.session_state.passo = 3
@@ -83,7 +145,7 @@ elif st.session_state.passo == 2:
 elif st.session_state.passo == 3:
     st.subheader("Avaliação por Setor")
     st.info("Para cada setor, dê uma nota e, se desejar, sugira uma melhoria.")
-    
+
     with st.form("etapa3"):
         def campo_setor(titulo, subtitulo, chave):
             st.markdown(f"#### {titulo}")
@@ -96,7 +158,7 @@ elif st.session_state.passo == 3:
 
         # Pergunta Unificada (Contábil/Fiscal)
         n_cont_fisc, m_cont_fisc = campo_setor("Setor Contábil / Fiscal", "Lançamentos, conciliações, impostos e escrituração fiscal.", "cont_fisc")
-        
+
         n_fol, m_fol = campo_setor("Pessoal (Folha)", "Folha de pagamento e rotinas trabalhistas.", "fol")
         n_rec, m_rec = campo_setor("Recrutamento", "Processos seletivos e contratação.", "rec")
         n_legal, m_legal = campo_setor("Setor Legal / Societário", "Aberturas e alterações contratuais.", "legal")
@@ -116,7 +178,7 @@ elif st.session_state.passo == 3:
                     sh = client.open_by_key(st.secrets["SHEET_ID"])
                     wks = sh.worksheet("respostas")
                     r = st.session_state.respostas
-                    
+
                     # Montagem exata de 29 colunas
                     dados = [
                         datetime.now().strftime("%d/%m/%Y %H:%M:%S"), # A
@@ -135,7 +197,7 @@ elif st.session_state.passo == 3:
                         n_cs, m_cs,                                   # AA, AB
                         contato                                       # AC
                     ]
-                    
+
                     wks.append_row(dados)
                     st.session_state.passo = 4
                     st.rerun()
