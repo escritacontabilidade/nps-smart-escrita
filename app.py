@@ -29,36 +29,28 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# --- 3. CONEXÃO COM GOOGLE SHEETS ---
+# --- 3. CONEXÃO COM GOOGLE SHEETS (SANEAMENTO ANALÍTICO) ---
 def conectar_planilha():
     scope = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
     
     # Busca o dicionário de segredos
-    creds_dict = st.secrets["gcp_service_account"]
+    creds_dict = dict(st.secrets["gcp_service_account"])
     
-    # TRATAMENTO ANTI-ERRO PEM:
-    # O segredo é garantir que as quebras de linha sejam interpretadas corretamente pelo Python
+    # TRATAMENTO ANTI-ERRO PEM DEFINITIVO:
     pk = creds_dict["private_key"]
-    if "\\n" in pk:
-        pk = pk.replace("\\n", "\n")
     
-    # Remove espaços ou aspas residuais
-    pk = pk.strip().strip('"').strip("'")
+    # Se houver qualquer "sujeira" (como o underline do erro 3, 95) antes do início da chave, 
+    # este comando joga o lixo fora e começa do lugar certo.
+    if "-----BEGIN PRIVATE KEY-----" in pk:
+        pk = pk[pk.find("-----BEGIN PRIVATE KEY-----"):]
+    
+    # Garante que as quebras de linha sejam reais
+    pk = pk.replace("\\n", "\n")
+    
+    # Remove espaços vazios nas pontas
+    creds_dict["private_key"] = pk.strip()
 
-    info = {
-        "type": "service_account",
-        "project_id": creds_dict["project_id"],
-        "private_key_id": creds_dict["private_key_id"],
-        "private_key": pk,
-        "client_email": creds_dict["client_email"],
-        "client_id": creds_dict["client_id"],
-        "auth_uri": creds_dict["auth_uri"],
-        "token_uri": creds_dict["token_uri"],
-        "auth_provider_x509_cert_url": creds_dict["auth_provider_x509_cert_url"],
-        "client_x509_cert_url": creds_dict["client_x509_cert_url"]
-    }
-    
-    credentials = Credentials.from_service_account_info(info, scopes=scope)
+    credentials = Credentials.from_service_account_info(creds_dict, scopes=scope)
     return gspread.authorize(credentials)
 
 # --- 4. CABEÇALHO ---
