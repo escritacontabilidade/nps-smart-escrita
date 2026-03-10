@@ -5,84 +5,119 @@ from datetime import datetime
 import base64
 import json
 
-# 1. Configuração da Página
+# --- 1. CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(page_title="NPS Smart - Escrita", page_icon="💡")
 
-# 2. Conexão Blindada (Base64)
+# --- 2. CONEXÃO BLINDADA (Lê a chave protegida para evitar erro de PEM) ---
 def conectar_planilha():
     scope = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
     try:
-        # Lê o texto blindado do Secrets
+        # Aqui o código procura pela chave que você colou nos Secrets
+        if "CHAVE_BASE64" not in st.secrets:
+            st.error("Erro: A chave 'CHAVE_BASE64' não foi encontrada nos Secrets do Streamlit.")
+            return None
+            
         blob = st.secrets["CHAVE_BASE64"]
-        # Converte de volta para o formato original do Google
+        # Decodifica o texto confuso e transforma de volta em JSON original
         info = json.loads(base64.b64decode(blob).decode("utf-8"))
         
         credentials = Credentials.from_service_account_info(info, scopes=scope)
         return gspread.authorize(credentials)
     except Exception as e:
-        st.error(f"Erro na conexão: {e}")
+        st.error(f"Erro crítico na conexão: {e}")
         return None
 
-# 3. Estilo Visual (CSS)
+# --- 3. CONFIGURAÇÕES VISUAIS (CSS) ---
 st.markdown("""
 <style>
     .stApp { background-color: #F4F6F8; }
-    .header-container { background-color: #0E3A5D; padding: 1.5rem; border-radius: 10px; margin-bottom: 20px; }
-    .header-title { color: #FFFFFF !important; font-size: 1.8rem; text-align: left; }
-    div.stButton > button { background-color: #1F5E8C !important; color: white !important; width: 100%; border-radius: 8px; font-weight: bold; }
+    label, p, span { color: #0E3A5D !important; font-weight: bold; }
+    .header-container { 
+        background-color: #0E3A5D; 
+        padding: 1.5rem; 
+        border-radius: 10px; 
+        text-align: left;
+        margin-bottom: 20px;
+    }
+    .header-title { color: #FFFFFF !important; margin-top: 10px; font-size: 1.8rem; }
+    div.stButton > button { 
+        background-color: #1F5E8C !important; 
+        color: white !important; 
+        width: 100%; 
+        border-radius: 8px; 
+        font-weight: bold;
+    }
 </style>
 """, unsafe_allow_html=True)
 
-# 4. Cabeçalho
-st.markdown('<div class="header-container"><h1 class="header-title">Pesquisa de Satisfação - Área Smart</h1></div>', unsafe_allow_html=True)
+# --- 4. CABEÇALHO ---
+with st.container():
+    st.markdown('<div class="header-container">', unsafe_allow_html=True)
+    st.markdown('<h1 class="header-title">Pesquisa de Satisfação - Área Smart</h1></div>', unsafe_allow_html=True)
 
-# 5. Lógica do Formulário
+# --- 5. LÓGICA DO FORMULÁRIO (SESSÃO) ---
 if 'passo' not in st.session_state:
     st.session_state.passo = 1
     st.session_state.respostas = {}
 
+# PASSO 1: IDENTIFICAÇÃO E NPS
 if st.session_state.passo == 1:
     with st.form("etapa1"):
         nome = st.text_input("Seu Nome:")
         empresa = st.text_input("Sua Empresa:")
-        nota = st.select_slider("De 0 a 10, recomendaria a Área Smart?", options=list(range(11)), value=10)
-        motivo = st.text_area("O que motivou sua nota?")
-        
-        if st.form_submit_button("Próximo"):
-            if nome and empresa:
-                st.session_state.respostas.update({'nome': nome, 'empresa': empresa, 'nota': nota, 'motivo': motivo})
-                st.session_state.passo = 2
-                st.experimental_rerun()
-            else:
-                st.error("Preencha nome e empresa.")
+        st.write("---")
+        st.markdown("### De 0 a 10, o quanto você recomendaria a **Área Smart** da Escrita para um parceiro?")
+        nota_smart = st.select_slider("Sua Nota:", options=list(range(11)), value=10)
+        motivo = st.text_area("O que mais motivou sua nota?")
 
+        if st.form_submit_button("Próximo"):
+            if not nome or not empresa:
+                st.error("Por favor, preencha seu nome e empresa.")
+            else:
+                st.session_state.respostas.update({
+                    'nome': nome, 
+                    'empresa': empresa, 
+                    'nota_smart': nota_smart, 
+                    'motivo': motivo
+                })
+                st.session_state.passo = 2
+                st.rerun()
+
+# PASSO 2: AVALIAÇÃO POR SETOR E ENVIO
 elif st.session_state.passo == 2:
     with st.form("etapa2"):
         st.subheader("Avaliação por Setor")
-        n_tec = st.selectbox("Setor Técnico", ["Não uso"] + list(range(11)), index=11)
-        n_fol = st.selectbox("Folha de Pagamento", ["Não uso"] + list(range(11)), index=11)
-        contato = st.radio("Podemos ligar?", ["Sim", "Não"], horizontal=True)
         
-        if st.form_submit_button("Finalizar"):
-            client = conectar_planilha()
-            if client:
-                try:
-                    sh = client.open_by_key(st.secrets["SHEET_ID"])
-                    wks = sh.worksheet("respostas")
-                    r = st.session_state.respostas
-                    wks.append_row([
-                        datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
-                        r['nome'], r['empresa'], r['nota'], r['motivo'],
-                        n_tec, n_fol, contato
-                    ])
-                    st.session_state.passo = 3
-                    st.experimental_rerun()
-                except Exception as e:
-                    st.error(f"Erro ao salvar na planilha: {e}")
+        n_tec = st.selectbox("Setor Técnico (Contábil e Fiscal)", ["Não uso"] + list(range(11)), index=11)
+        n_fol = st.selectbox("Pessoal (Folha)", ["Não uso"] + list(range(11)), index=11)
+        n_rec = st.selectbox("Recrutamento", ["Não uso"] + list(range(11)), index=11)
+        
+        contato = st.radio("Podemos te ligar sobre sua nota?", ["Sim", "Não"], horizontal=True)
 
+        if st.form_submit_button("Finalizar"):
+            with st.spinner("Enviando dados..."):
+                client = conectar_planilha()
+                if client:
+                    try:
+                        sh = client.open_by_key(st.secrets["SHEET_ID"])
+                        wks = sh.worksheet("respostas")
+                        
+                        r = st.session_state.respostas
+                        linha = [
+                            datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
+                            r['nome'], r['empresa'], r['nota_smart'], r['motivo'],
+                            n_tec, n_fol, n_rec, contato
+                        ]
+                        wks.append_row(linha)
+                        st.session_state.passo = 3
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"Erro ao acessar a planilha: {e}")
+
+# PASSO 3: SUCESSO
 elif st.session_state.passo == 3:
     st.balloons()
-    st.success("Obrigado! Feedback enviado com sucesso.")
-    if st.button("Nova Resposta"):
+    st.success("Obrigado! Sua opinião faz a área Smart crescer.")
+    if st.button("Enviar nova resposta"):
         st.session_state.passo = 1
-        st.experimental_rerun()
+        st.rerun()
